@@ -1,0 +1,12 @@
+{application, bf_bot,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { bf_bot_app, []}},
+  {env, []}
+ ]}.

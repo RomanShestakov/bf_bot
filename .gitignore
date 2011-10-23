@@ -1,0 +1,14 @@
+.DS_Store
+.eunit
+logs
+/ebin/*
+*~
+/bin/*
+.#*
+*.beam
+/deps/*
+/docs/*
+rel/bf_gateway
+rel/bf_gateway/*
+src/bf_gateway.app.src %% to avoid accidently committing password to github
+
