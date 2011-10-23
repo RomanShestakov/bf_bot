@@ -41,6 +41,13 @@ start_link() ->
 %% Description: Initializes the server
 %%--------------------------------------------------------------------
 init([]) ->
+    log4erl:info("setting up connection to zeromq"),
+    {ok, Context} = erlzmq:context(),
+    {ok, Subscriber} = erlzmq:socket(Context, sub),
+    ok = erlzmq:connect(Subscriber, "tcp://localhost:5556"),
+    Filter = "{",
+    ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
+    spawn_link(fun() -> loop(Subscriber) end),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
@@ -94,3 +101,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+loop(Subscriber) ->
+    {ok, Msg} = erlzmq:recv(Subscriber),
+    io:format(Msg),
+    loop(Subscriber).

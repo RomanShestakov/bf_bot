@@ -8,5 +8,5 @@
                   stdlib
                  ]},
   {mod, { bf_bot_app, []}},
-  {env, []}
+  {env, [{log4erl_config, "etc/log4erl.conf"}]}
  ]}.

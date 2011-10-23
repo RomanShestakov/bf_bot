@@ -17,6 +17,13 @@ start() ->
     [begin application:start(A), io:format("~p~n", [A]) end || A <- ?APPS].
 
 start(_StartType, _StartArgs) ->
+    Config = 
+	case application:get_env(bf_bot, log4erl_config) of
+	    {ok, Value} -> Value;
+	    undefined -> throw({error, log4erl_config_not_defined})
+	end,
+    log4erl:conf(Config),
+    log4erl:info("starting bf_bot"),
     bf_bot_sup:start_link().
 
 stop(_State) ->
