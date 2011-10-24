@@ -22,7 +22,9 @@
 
 -export([
 	 log4erl_config/0,
- 	 get_marketId/0
+ 	 get_marketId/0,
+	 get_gateway_host/0,
+	 get_gateway_port/0
 %% 	 get_password/0,
 %% 	 get_GS_Wsdl/0,
 %% 	 get_GX_Wsdl/0
@@ -52,6 +54,33 @@ get_marketId() ->
 	{ok, Value} -> Value;
 	undefined -> throw({error, marketId_not_defined})
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get hostname or ipAddress of bf_gateway
+%% @end
+%%--------------------------------------------------------------------
+-spec get_gateway_host() -> string() | no_return().
+get_gateway_host() ->
+    case application:get_env(bf_bot, gateway_host) of
+	{ok, Value} -> Value;
+	undefined -> throw({error, gateway_host_not_defined})
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get port of bf_gateway
+%% @end
+%%--------------------------------------------------------------------
+-spec get_gateway_port() -> integer() | no_return().
+get_gateway_port() ->
+    case application:get_env(bf_bot, gateway_port) of
+	{ok, Value} -> Value;
+	undefined -> throw({error, gateway_port_not_defined})
+    end.
+
+
 
 %% %%--------------------------------------------------------------------
 %% %% @doc

@@ -42,12 +42,14 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     MarketId = bf_bot_util:get_marketId(),
-    log4erl:info("MarketId ~p", [MarketId]),    
+    GatewayHost = bf_bot_util:get_gateway_host(),
+    GatewayPort = bf_bot_util:get_gateway_port(),
+    log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
     log4erl:info("setting up connection to zeromq"),
     {ok, Context} = erlzmq:context(),
     {ok, Subscriber} = erlzmq:socket(Context, sub),
-    ok = erlzmq:connect(Subscriber, "tcp://localhost:5556"),
-    Filter = "{" ++ integer_to_list(MarketId),
+    ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
+    Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
     spawn_link(fun() -> loop(Subscriber) end),
     {ok, #state{}}.

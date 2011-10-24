@@ -10,6 +10,8 @@
   {mod, { bf_bot_app, []}},
   {env, [
 	 {log4erl_config, "etc/log4erl.conf"},
-	 {marketId, 102873783}
+	 {marketId, 102873783},
+	 {gateway_host, "localhost"},
+	 {gateway_port, 5556}
   ]}
  ]}.
