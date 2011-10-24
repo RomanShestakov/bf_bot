@@ -41,11 +41,13 @@ start_link() ->
 %% Description: Initializes the server
 %%--------------------------------------------------------------------
 init([]) ->
+    MarketId = bf_bot_util:get_marketId(),
+    log4erl:info("MarketId ~p", [MarketId]),    
     log4erl:info("setting up connection to zeromq"),
     {ok, Context} = erlzmq:context(),
     {ok, Subscriber} = erlzmq:socket(Context, sub),
     ok = erlzmq:connect(Subscriber, "tcp://localhost:5556"),
-    Filter = "{",
+    Filter = "{" ++ integer_to_list(MarketId),
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
     spawn_link(fun() -> loop(Subscriber) end),
     {ok, #state{}}.
