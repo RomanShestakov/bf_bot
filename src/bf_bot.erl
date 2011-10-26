@@ -10,7 +10,9 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/0,
+	 subscribeMarket/1,
+	 unsubscribeMarket/1]).
 
 -define(SERVER, ?MODULE).
 %% gen_server callbacks
@@ -27,11 +29,29 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({global, ?SERVER}, ?MODULE, [], []).
 
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% publish prices for a given market
+%% @end
+%%--------------------------------------------------------------------
+-spec subscribeMarket(integer()) -> ok.
+subscribeMarket(MarketId) ->
+    gen_server:cast({global, bf_gateway}, {subscribeMarket, MarketId}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% stop publishing prices from a given market
+%% @end
+%%--------------------------------------------------------------------
+-spec unsubscribeMarket(integer()) -> ok.
+unsubscribeMarket(MarketId) ->
+    gen_server:cast({global, bf_gateway}, {unsubscribeMarket, MarketId}).
+
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -41,6 +61,7 @@ start_link() ->
 %% Description: Initializes the server
 %%--------------------------------------------------------------------
 init([]) ->
+    log4erl:info("entered init"),    
     MarketId = bf_bot_util:get_marketId(),
     GatewayHost = bf_bot_util:get_gateway_host(),
     GatewayPort = bf_bot_util:get_gateway_port(),
@@ -51,7 +72,10 @@ init([]) ->
     ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
     Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
+    %% start a process to read the prices from 0MZ
     spawn_link(fun() -> loop(Subscriber) end),
+    %% send request to bf_gateway to start publishing prices for this MarketId
+    ok = subscribeMarket(MarketId),
     {ok, #state{}}.
 
 %%--------------------------------------------------------------------
