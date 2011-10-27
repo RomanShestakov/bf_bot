@@ -75,7 +75,12 @@ init([]) ->
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
     %% start a process to read the prices from 0MZ
     spawn_link(fun() -> loop(Subscriber) end),
+    %% add the node to cluster - is there a better way of doing this?
+    log4erl:info("connecting to bf_gateway cluster"),
+    pong = net_adm:ping('bf_gateway@127.0.0.1'),
+    timer:sleep(6000),
     %% send request to bf_gateway to start publishing prices for this MarketId
+    log4erl:info("subscribing to marketId: ~p", [MarketId]),
     ok = subscribeMarket(MarketId),
     {ok, #state{marketId = MarketId}}.
 
