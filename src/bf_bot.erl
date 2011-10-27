@@ -19,7 +19,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--record(state, {}).
+-record(state, {marketId}).
 
 %%====================================================================
 %% API
@@ -61,6 +61,7 @@ unsubscribeMarket(MarketId) ->
 %% Description: Initializes the server
 %%--------------------------------------------------------------------
 init([]) ->
+    process_flag(trap_exit, true),
     log4erl:info("entered init"),    
     MarketId = bf_bot_util:get_marketId(),
     GatewayHost = bf_bot_util:get_gateway_host(),
@@ -76,7 +77,7 @@ init([]) ->
     spawn_link(fun() -> loop(Subscriber) end),
     %% send request to bf_gateway to start publishing prices for this MarketId
     ok = subscribeMarket(MarketId),
-    {ok, #state{}}.
+    {ok, #state{marketId = MarketId}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -116,7 +117,8 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    unsubscribeMarket(State#state.marketId),
     ok.
 
 %%--------------------------------------------------------------------
