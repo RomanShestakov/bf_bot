@@ -62,11 +62,15 @@ unsubscribeMarket(MarketId) ->
 %%--------------------------------------------------------------------
 init([]) ->
     process_flag(trap_exit, true),
-    log4erl:info("entered init"),    
     MarketId = bf_bot_util:get_marketId(),
     GatewayHost = bf_bot_util:get_gateway_host(),
+    GatewayNode = bf_bot_util:get_gateway_node(),
     GatewayPort = bf_bot_util:get_gateway_port(),
     log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
+    %% add the node to cluster - is there a better way of doing this?
+    log4erl:info("connecting to bf_gateway node: ~p", [GatewayNode]),
+    pong = net_adm:ping(GatewayNode),
+    timer:sleep(6000),
     log4erl:info("setting up connection to zeromq"),
     {ok, Context} = erlzmq:context(),
     {ok, Subscriber} = erlzmq:socket(Context, sub),
@@ -75,10 +79,6 @@ init([]) ->
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
     %% start a process to read the prices from 0MZ
     spawn_link(fun() -> loop(Subscriber) end),
-    %% add the node to cluster - is there a better way of doing this?
-    log4erl:info("connecting to bf_gateway cluster"),
-    pong = net_adm:ping('bf_gateway@127.0.0.1'),
-    timer:sleep(6000),
     %% send request to bf_gateway to start publishing prices for this MarketId
     log4erl:info("subscribing to marketId: ~p", [MarketId]),
     ok = subscribeMarket(MarketId),

@@ -24,6 +24,7 @@
 	 log4erl_config/0,
  	 get_marketId/0,
 	 get_gateway_host/0,
+	 get_gateway_node/0,
 	 get_gateway_port/0
 %% 	 get_password/0,
 %% 	 get_GS_Wsdl/0,
@@ -66,6 +67,18 @@ get_gateway_host() ->
     case application:get_env(bf_bot, gateway_host) of
 	{ok, Value} -> Value;
 	undefined -> throw({error, gateway_host_not_defined})
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get node of bf_gateway
+%% @end
+%%--------------------------------------------------------------------
+-spec get_gateway_node() -> string() | no_return().
+get_gateway_node() ->
+    case application:get_env(bf_bot, gateway_node) of
+	{ok, Value} -> Value;
+	undefined -> throw({error, gateway_node_not_defined})
     end.
 
 %%--------------------------------------------------------------------
