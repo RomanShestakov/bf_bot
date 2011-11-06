@@ -13,6 +13,7 @@
 	 {marketId, 102873783},
 	 {gateway_host, "localhost"},
 	 {gateway_node, 'bf_gateway@127.0.0.1'},
-	 {gateway_port, 5556}
+	 {gateway_port, 5556},
+	 {tickkeeper_node, 'tickkeeper@127.0.0.1'}	
   ]}
  ]}.

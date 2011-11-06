@@ -80,11 +80,16 @@ init([]) ->
     GatewayHost = bf_bot_util:get_gateway_host(),
     GatewayNode = bf_bot_util:get_gateway_node(),
     GatewayPort = bf_bot_util:get_gateway_port(),
+    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
     log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
     %% add the node to cluster - is there a better way of doing this?
-    log4erl:info("connecting to bf_gateway node: ~p", [GatewayNode]),
+    log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
     pong = net_adm:ping(GatewayNode),
+    pong = net_adm:ping(TickkeeperNode),
     timer:sleep(6000),
+    %% init tickkeeper db
+    log4erl:info("init tickkeeper db"),
+    ok = init_tickkeeper(MarketId),
     log4erl:info("setting up connection to zeromq"),
     {ok, Context} = erlzmq:context(),
     {ok, Subscriber} = erlzmq:socket(Context, sub),
@@ -92,7 +97,7 @@ init([]) ->
     Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
     ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
     %% start a process to read the prices from 0MZ
-    spawn_link(fun() -> loop(Subscriber) end),
+    spawn_link(fun() -> loop(Subscriber, MarketId) end),
     %% send request to bf_gateway to start publishing prices for this MarketId
     log4erl:info("subscribing to marketId: ~p", [MarketId]),
     ok = subscribeMarket(MarketId),
@@ -151,7 +156,18 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-loop(Subscriber) ->
+loop(Subscriber, MarketId) ->
     {ok, Msg} = erlzmq:recv(Subscriber),
     io:format(Msg),
-    loop(Subscriber).
+    tk_client:append(integer_to_list(MarketId),
+		     {calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())), 3.1345}),
+    loop(Subscriber, MarketId).
+
+
+init_tickkeeper(MarketId) ->
+    case tk_client:open(integer_to_list(MarketId)) of
+	ok -> ok;
+	{error, _Err} -> tk_client:create(integer_to_list(MarketId), [{"timestamp", {integer, 64}}, {"ask", {float, 64}}])
+    end.
+		    
+	    

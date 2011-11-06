@@ -25,7 +25,8 @@
  	 get_marketId/0,
 	 get_gateway_host/0,
 	 get_gateway_node/0,
-	 get_gateway_port/0
+	 get_gateway_port/0,
+	 get_tickkeeper_node/0
 %% 	 get_password/0,
 %% 	 get_GS_Wsdl/0,
 %% 	 get_GX_Wsdl/0
@@ -93,6 +94,18 @@ get_gateway_port() ->
 	undefined -> throw({error, gateway_port_not_defined})
     end.
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get node of tickkeeper
+%% @end
+%%--------------------------------------------------------------------
+-spec get_tickkeeper_node() -> string() | no_return().
+get_tickkeeper_node() ->
+    case application:get_env(bf_bot, tickkeeper_node) of
+	{ok, Value} -> Value;
+	undefined -> throw({error, tickkeeper_node_not_defined})
+    end.
 
 
 %% %%--------------------------------------------------------------------
