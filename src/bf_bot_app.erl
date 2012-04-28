@@ -24,9 +24,7 @@
 
 %% Application callbacks
 -export([start/0, start/2, stop/0, stop/1]).
-
--define(APPS, [log4erl, bf_bot]).
-
+-define(APPS, [log4erl, inets, bf_bot]).
 
 %% ===================================================================
 %% Application callbacks
@@ -37,10 +35,14 @@ start() ->
     [begin application:start(A), io:format("~p~n", [A]) end || A <- ?APPS].
 
 start(_StartType, _StartArgs) ->
-    Config = bf_bot_util:log4erl_config(),
-    log4erl:conf(Config),
-    log4erl:info("starting bf_bot"),
-    bf_bot_sup:start_link().
+    case application:get_env(bf_bot, marketId) of
+	{ok, MarketId} -> 
+	    Config = bf_bot_util:log4erl_config(),
+	    log4erl:conf(Config),
+	    log4erl:info("starting bf_bot"),
+	    bf_bot_sup:start_link(MarketId);
+	undefined -> throw({error, marketId_not_defined})
+    end.
 
 stop(_State) ->
     ok.

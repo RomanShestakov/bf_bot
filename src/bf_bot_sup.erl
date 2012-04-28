@@ -23,7 +23,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -35,13 +35,13 @@
 %% API functions
 %% ===================================================================
 
-start_link() ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+start_link(MarketId) ->
+    supervisor:start_link({local, ?MODULE}, ?MODULE, [MarketId]).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([]) ->
-    Bfbot = {'bf_bot',{'bf_bot',start_link,[]},permanent,2000,worker,['bf_bot']},
+init([MarketId]) ->
+    Bfbot = {'bf_bot', {'bf_bot', start_link, [MarketId]}, permanent, 2000, worker, ['bf_bot']},
     {ok, {{one_for_one, 5, 10}, [Bfbot]}}.

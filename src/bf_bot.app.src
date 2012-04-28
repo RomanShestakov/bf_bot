@@ -5,9 +5,10 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+		  inets
                  ]},
-  {mod, { bf_bot_app, []}},
+  {mod, {bf_bot_app, []}},
   {env, [
 	 {log4erl_config, "etc/log4erl.conf"},
 	 {marketId, 102873783},

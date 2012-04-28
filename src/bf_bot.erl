@@ -24,9 +24,9 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-	 subscribeMarket/1,
-	 unsubscribeMarket/1]).
+-export([start_link/1,
+	 subscribeToMarket/1,
+	 unsubscribeFromMarket/1]).
 
 -define(SERVER, ?MODULE).
 %% gen_server callbacks
@@ -42,8 +42,8 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(MarketId) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [MarketId], []).
 
 %%====================================================================
 %% gen_server callbacks
@@ -53,19 +53,18 @@ start_link() ->
 %% publish prices for a given market
 %% @end
 %%--------------------------------------------------------------------
--spec subscribeMarket(integer()) -> ok.
-subscribeMarket(MarketId) ->
-    gen_server:cast({global, bf_gateway}, {subscribeMarket, MarketId}).
+-spec subscribeToMarket(integer()) -> ok.
+subscribeToMarket(MarketId) ->
+    httpc:request(put, {"http://rs.home:8000/market/" ++ integer_to_list(MarketId), [], "application/x-www-form-urlencoded", []}, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% stop publishing prices from a given market
 %% @end
 %%--------------------------------------------------------------------
--spec unsubscribeMarket(integer()) -> ok.
-unsubscribeMarket(MarketId) ->
-    gen_server:cast({global, bf_gateway}, {unsubscribeMarket, MarketId}).
-
+-spec unsubscribeFromMarket(integer()) -> ok.
+unsubscribeFromMarket(MarketId) ->
+    httpc:request(delete, {"http://rs.home:8000/market/" ++ integer_to_list(MarketId), []}, [], []).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -74,22 +73,22 @@ unsubscribeMarket(MarketId) ->
 %%                         {stop, Reason}
 %% Description: Initializes the server
 %%--------------------------------------------------------------------
-init([]) ->
+init([MarketId]) ->
     process_flag(trap_exit, true),
-    MarketId = bf_bot_util:get_marketId(),
+    %%MarketId = bf_bot_util:get_marketId(),
     GatewayHost = bf_bot_util:get_gateway_host(),
-    GatewayNode = bf_bot_util:get_gateway_node(),
+  %  GatewayNode = bf_bot_util:get_gateway_node(),
     GatewayPort = bf_bot_util:get_gateway_port(),
-    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
-    log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
+%    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
+  %  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
     %% add the node to cluster - is there a better way of doing this?
-    log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
-    pong = net_adm:ping(GatewayNode),
-    pong = net_adm:ping(TickkeeperNode),
-    timer:sleep(6000),
+ %   log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
+    %% pong = net_adm:ping(GatewayNode),
+    %% pong = net_adm:ping(TickkeeperNode),
+    %% timer:sleep(6000),
     %% init tickkeeper db
-    log4erl:info("init tickkeeper db"),
-    ok = init_tickkeeper(MarketId),
+    %% log4erl:info("init tickkeeper db"),
+    %% ok = init_tickkeeper(MarketId),
     log4erl:info("setting up connection to zeromq"),
     {ok, Context} = erlzmq:context(),
     {ok, Subscriber} = erlzmq:socket(Context, sub),
@@ -100,7 +99,8 @@ init([]) ->
     spawn_link(fun() -> loop(Subscriber, MarketId) end),
     %% send request to bf_gateway to start publishing prices for this MarketId
     log4erl:info("subscribing to marketId: ~p", [MarketId]),
-    ok = subscribeMarket(MarketId),
+    Reply = subscribeToMarket(MarketId),
+    log4erl:info("subscribing to Market reply: ~p", [Reply]),
     {ok, #state{marketId = MarketId}}.
 
 %%--------------------------------------------------------------------
@@ -142,7 +142,7 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    unsubscribeMarket(State#state.marketId),
+    unsubscribeFromMarket(State#state.marketId),
     ok.
 
 %%--------------------------------------------------------------------
@@ -159,15 +159,15 @@ code_change(_OldVsn, State, _Extra) ->
 loop(Subscriber, MarketId) ->
     {ok, Msg} = erlzmq:recv(Subscriber),
     io:format(Msg),
-    tk_client:append(integer_to_list(MarketId),
-		     {calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())), 3.1345}),
+    %% tk_client:append(integer_to_list(MarketId),
+    %% 		     {calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())), 3.1345}),
     loop(Subscriber, MarketId).
 
 
-init_tickkeeper(MarketId) ->
-    case tk_client:open(integer_to_list(MarketId)) of
-	ok -> ok;
-	{error, _Err} -> tk_client:create(integer_to_list(MarketId), [{"timestamp", {integer, 64}}, {"ask", {float, 64}}])
-    end.
+%% init_tickkeeper(MarketId) ->
+%%     case tk_client:open(integer_to_list(MarketId)) of
+%% 	ok -> ok;
+%% 	{error, _Err} -> tk_client:create(integer_to_list(MarketId), [{"timestamp", {integer, 64}}, {"ask", {float, 64}}])
+%%     end.
 		    
 	    
