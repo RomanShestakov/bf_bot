@@ -25,8 +25,8 @@
 
 %% API
 -export([start_link/1,
-	 subscribeToMarket/1,
-	 unsubscribeFromMarket/1]).
+	 subscribeToMarket/2,
+	 unsubscribeFromMarket/2]).
 
 -define(SERVER, ?MODULE).
 %% gen_server callbacks
@@ -53,18 +53,18 @@ start_link(MarketId) ->
 %% publish prices for a given market
 %% @end
 %%--------------------------------------------------------------------
--spec subscribeToMarket(integer()) -> ok.
-subscribeToMarket(MarketId) ->
-    httpc:request(put, {"http://rs.home:8000/market/" ++ integer_to_list(MarketId), [], "application/x-www-form-urlencoded", []}, [], []).
+-spec subscribeToMarket(string(), integer()) -> ok.
+subscribeToMarket(GatewayHost, MarketId) ->
+    httpc:request(put, {"http://" ++ GatewayHost ++ ":8000/market/" ++ integer_to_list(MarketId), [], "application/x-www-form-urlencoded", []}, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% stop publishing prices from a given market
 %% @end
 %%--------------------------------------------------------------------
--spec unsubscribeFromMarket(integer()) -> ok.
-unsubscribeFromMarket(MarketId) ->
-    httpc:request(delete, {"http://rs.home:8000/market/" ++ integer_to_list(MarketId), []}, [], []).
+-spec unsubscribeFromMarket(string(), integer()) -> ok.
+unsubscribeFromMarket(GatewayHost, MarketId) ->
+    httpc:request(delete, {"http://" ++ GatewayHost ++ ":8000/market/" ++ integer_to_list(MarketId), []}, [], []).
 
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
@@ -76,9 +76,7 @@ unsubscribeFromMarket(MarketId) ->
 init([MarketId]) ->
     process_flag(trap_exit, true),
     try
-	%%MarketId = bf_bot_util:get_marketId(),
 	GatewayHost = bf_bot_util:get_gateway_host(),
-						%  GatewayNode = bf_bot_util:get_gateway_node(),
 	GatewayPort = bf_bot_util:get_gateway_port(),
 						%    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
 						%  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
@@ -100,7 +98,7 @@ init([MarketId]) ->
 	spawn_link(fun() -> loop(Subscriber, MarketId) end),
 	%% send request to bf_gateway to start publishing prices for this MarketId
 	log4erl:info("subscribing to marketId: ~p", [MarketId]),
-	Reply = subscribeToMarket(MarketId),
+	Reply = subscribeToMarket(GatewayHost, MarketId),
 	log4erl:info("subscribing to Market reply: ~p", [Reply]),
 	{ok, #state{marketId = MarketId}}
     catch
@@ -108,8 +106,6 @@ init([MarketId]) ->
 	    log4erl:error("~p", [Reason]),
 	    {stop, Reason}
     end.
-
-
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -150,7 +146,7 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    unsubscribeFromMarket(State#state.marketId),
+    unsubscribeFromMarket(bf_bot_util:get_gateway_host(), State#state.marketId),
     ok.
 
 %%--------------------------------------------------------------------

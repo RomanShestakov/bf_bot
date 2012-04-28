@@ -24,12 +24,8 @@
 	 log4erl_config/0,
  	 get_marketId/0,
 	 get_gateway_host/0,
-	 get_gateway_node/0,
 	 get_gateway_port/0,
 	 get_tickkeeper_node/0
-%% 	 get_password/0,
-%% 	 get_GS_Wsdl/0,
-%% 	 get_GX_Wsdl/0
 	]).
 
 %%--------------------------------------------------------------------
@@ -56,8 +52,6 @@ get_marketId() ->
 	{ok, Value} -> Value;
 	undefined -> throw({error, marketId_not_defined})
     end.
-
-
 %%--------------------------------------------------------------------
 %% @doc
 %% get hostname or ipAddress of bf_gateway
@@ -72,18 +66,6 @@ get_gateway_host() ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% get node of bf_gateway
-%% @end
-%%--------------------------------------------------------------------
--spec get_gateway_node() -> string() | no_return().
-get_gateway_node() ->
-    case application:get_env(bf_bot, gateway_node) of
-	{ok, Value} -> Value;
-	undefined -> throw({error, gateway_node_not_defined})
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
 %% get port of bf_gateway
 %% @end
 %%--------------------------------------------------------------------
@@ -93,7 +75,6 @@ get_gateway_port() ->
 	{ok, Value} -> Value;
 	undefined -> throw({error, gateway_port_not_defined})
     end.
-
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -107,33 +88,3 @@ get_tickkeeper_node() ->
 	undefined -> throw({error, tickkeeper_node_not_defined})
     end.
 
-
-%% %%--------------------------------------------------------------------
-%% %% @doc
-%% %% get passord
-%% %% @end
-%% %%--------------------------------------------------------------------
-%% -spec get_password() -> string() | no_return().
-%% get_password() ->
-%%     case application:get_env(bf_gateway, password) of
-%% 	{ok, Value} -> Value;
-%% 	undefined -> throw({error, password_not_defined})
-%%     end.
-
-%% %%--------------------------------------------------------------------
-%% %% @doc
-%% %% get BFGlobalService.wsdl
-%% %% @end
-%% %%--------------------------------------------------------------------
-%% -spec get_GS_Wsdl() -> string().
-%% get_GS_Wsdl() ->
-%%     "file://" ++ code:priv_dir(bf_gateway) ++ "/BFGlobalService.wsdl".
-
-%% %%--------------------------------------------------------------------
-%% %% @doc
-%% %% get BFExchangeService.wsdl
-%% %% @end
-%% %%--------------------------------------------------------------------
-%% -spec get_GX_Wsdl() -> string().
-%% get_GX_Wsdl() ->
-%%     "file://" ++ code:priv_dir(bf_gateway) ++ "/BFExchangeService.wsdl".
