@@ -75,33 +75,41 @@ unsubscribeFromMarket(MarketId) ->
 %%--------------------------------------------------------------------
 init([MarketId]) ->
     process_flag(trap_exit, true),
-    %%MarketId = bf_bot_util:get_marketId(),
-    GatewayHost = bf_bot_util:get_gateway_host(),
-  %  GatewayNode = bf_bot_util:get_gateway_node(),
-    GatewayPort = bf_bot_util:get_gateway_port(),
-%    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
-  %  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
-    %% add the node to cluster - is there a better way of doing this?
- %   log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
-    %% pong = net_adm:ping(GatewayNode),
-    %% pong = net_adm:ping(TickkeeperNode),
-    %% timer:sleep(6000),
-    %% init tickkeeper db
-    %% log4erl:info("init tickkeeper db"),
-    %% ok = init_tickkeeper(MarketId),
-    log4erl:info("setting up connection to zeromq"),
-    {ok, Context} = erlzmq:context(),
-    {ok, Subscriber} = erlzmq:socket(Context, sub),
-    ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
-    Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
-    ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
-    %% start a process to read the prices from 0MZ
-    spawn_link(fun() -> loop(Subscriber, MarketId) end),
-    %% send request to bf_gateway to start publishing prices for this MarketId
-    log4erl:info("subscribing to marketId: ~p", [MarketId]),
-    Reply = subscribeToMarket(MarketId),
-    log4erl:info("subscribing to Market reply: ~p", [Reply]),
-    {ok, #state{marketId = MarketId}}.
+    try
+	%%MarketId = bf_bot_util:get_marketId(),
+	GatewayHost = bf_bot_util:get_gateway_host(),
+						%  GatewayNode = bf_bot_util:get_gateway_node(),
+	GatewayPort = bf_bot_util:get_gateway_port(),
+						%    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
+						%  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
+	%% add the node to cluster - is there a better way of doing this?
+						%   log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
+	%% pong = net_adm:ping(GatewayNode),
+	%% pong = net_adm:ping(TickkeeperNode),
+	%% timer:sleep(6000),
+	%% init tickkeeper db
+	%% log4erl:info("init tickkeeper db"),
+	%% ok = init_tickkeeper(MarketId),
+	log4erl:info("setting up connection to zeromq"),
+	{ok, Context} = erlzmq:context(),
+	{ok, Subscriber} = erlzmq:socket(Context, sub),
+	ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
+	Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
+	ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
+	%% start a process to read the prices from 0MZ
+	spawn_link(fun() -> loop(Subscriber, MarketId) end),
+	%% send request to bf_gateway to start publishing prices for this MarketId
+	log4erl:info("subscribing to marketId: ~p", [MarketId]),
+	Reply = subscribeToMarket(MarketId),
+	log4erl:info("subscribing to Market reply: ~p", [Reply]),
+	{ok, #state{marketId = MarketId}}
+    catch
+	_:Reason ->
+	    log4erl:error("~p", [Reason]),
+	    {stop, Reason}
+    end.
+
+
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
