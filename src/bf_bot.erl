@@ -3,8 +3,8 @@
 %%% This file is part of bf_bot
 %%%
 %%% bf_bot is free software: you can redistribute it and/or modify
-%%% it under the terms of the GNU Lesser General Public License as 
-%%% published by the Free Software Foundation, either version 3 of 
+%%% it under the terms of the GNU Lesser General Public License as
+%%% published by the Free Software Foundation, either version 3 of
 %%% the License, or (at your option) any later version.
 %%%
 %%% bf_bot is distributed in the hope that it will be useful,
@@ -12,8 +12,8 @@
 %%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %%% GNU Lesser General Public License for more details.
 %%%
-%%% You should have received a copy of the GNU Lesser General Public 
-%%% License along with Erlsom.  If not, see 
+%%% You should have received a copy of the GNU Lesser General Public
+%%% License along with Erlsom.  If not, see
 %%% <http://www.gnu.org/licenses/>.
 %%%
 %%% Author contact: romanshestakov@yahoo.co.uk
@@ -55,7 +55,8 @@ start_link(MarketId) ->
 %%--------------------------------------------------------------------
 -spec subscribeToMarket(string(), integer()) -> ok.
 subscribeToMarket(GatewayHost, MarketId) ->
-    httpc:request(put, {"http://" ++ GatewayHost ++ ":8000/market/" ++ integer_to_list(MarketId), [], "application/x-www-form-urlencoded", []}, [], []).
+    httpc:request(put, {"http://" ++ GatewayHost ++ ":8000/market/" ++ integer_to_list(MarketId),
+			[], "application/x-www-form-urlencoded", []}, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -79,7 +80,7 @@ init([MarketId]) ->
 	GatewayHost = bf_bot_util:get_gateway_host(),
 	GatewayPort = bf_bot_util:get_gateway_port(),
 						%    TickkeeperNode = bf_bot_util:get_tickkeeper_node(),
-						%  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),    
+						%  log4erl:info("gateway host: ~p, gateway port: ~p, MarketId: ~p", [GatewayHost, GatewayPort, MarketId]),
 	%% add the node to cluster - is there a better way of doing this?
 						%   log4erl:info("connecting to nodes: ~p", [[GatewayNode, TickkeeperNode]]),
 	%% pong = net_adm:ping(GatewayNode),
@@ -89,11 +90,7 @@ init([MarketId]) ->
 	%% log4erl:info("init tickkeeper db"),
 	%% ok = init_tickkeeper(MarketId),
 	log4erl:info("setting up connection to zeromq"),
-	{ok, Context} = erlzmq:context(),
-	{ok, Subscriber} = erlzmq:socket(Context, sub),
-	ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
-	Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
-	ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
+	{ok, Subscriber} = init_zeromq(GatewayHost, GatewayPort, MarketId),
 	%% start a process to read the prices from 0MZ
 	spawn_link(fun() -> loop(Subscriber, MarketId) end),
 	%% send request to bf_gateway to start publishing prices for this MarketId
@@ -173,5 +170,19 @@ loop(Subscriber, MarketId) ->
 %% 	ok -> ok;
 %% 	{error, _Err} -> tk_client:create(integer_to_list(MarketId), [{"timestamp", {integer, 64}}, {"ask", {float, 64}}])
 %%     end.
-		    
-	    
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% init connection to zeromq
+%% @end
+%%--------------------------------------------------------------------
+-spec init_zeromq(string(), string(), string()) -> {ok, any()}.
+init_zeromq(GatewayHost, GatewayPort, MarketId) ->
+    {ok, Context} = erlzmq:context(),
+    {ok, Subscriber} = erlzmq:socket(Context, sub),
+    ok = erlzmq:connect(Subscriber, "tcp://" ++ GatewayHost ++ ":" ++ integer_to_list(GatewayPort)),
+    Filter = "{\"MarketId\":" ++ integer_to_list(MarketId),
+    ok = erlzmq:setsockopt(Subscriber, subscribe, Filter),
+    {ok, Subscriber}.
+
